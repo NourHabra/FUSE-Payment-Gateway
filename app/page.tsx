@@ -1,90 +1,46 @@
 /* eslint-disable @next/next/no-img-element */
 'use client'
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card as UICard, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { generateAesKey, encryptAesKey, encryptData, decryptData } from "../lib/crypto-utils";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 
-// Base URL for the backend API
 const baseUrl = "https://fuse-backend-x7mr.onrender.com";
 
-// Interface for the props passed to the Home component
 interface HomeProps {
   billNumber?: string;
 }
 
-// Interface for the Bill object
-interface Bill {
-  id: string;
-  category: string;
-  merchantAccount: {
-    user: {
-      name: string;
-    };
-  };
-  details: string;
-  amount: number;
-  // other properties
-}
-
-// Interface for the Card object
-interface Card {
-  id: string;
-  cvv: string;
-  expiryDate: string;
-  cardName: string; // Add this line
-  // other properties
-}
-
-// Home component definition
 export default function Home({ billNumber }: HomeProps) {
-  const router = useRouter(); // Next.js router for navigation
-  const [step, setStep] = useState<1 | 2 | 3>(1); // State to manage the current step in the process
-  const [email, setEmail] = useState(""); // State to manage the email input
-  const [password, setPassword] = useState(""); // State to manage the password input
-  const [aesKey, setAesKey] = useState(""); // State to store the AES key
-  const [loading, setLoading] = useState(false); // State to manage the loading state
-  const [cards, setCards] = useState<Card[]>([]); // State to store the list of cards
-  const [selectedCard, setSelectedCard] = useState<Card | null>(null); // State to store the selected card
-  const [bill, setBill] = useState<Bill | null>(null); // State to store the bill details
-  const [transactionStatus, setTransactionStatus] = useState(""); // State to store the transaction status
-  const [jwt, setJwt] = useState(""); // State to store the JWT token
+  const router = useRouter();
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [aesKey, setAesKey] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [cards, setCards] = useState([]);
+  const [selectedCard, setSelectedCard] = useState(null);
+  const [bill, setBill] = useState(null);
+  const [transactionStatus, setTransactionStatus] = useState("");
+  const [jwt, setJwt] = useState("");
 
-  // Function to search for a bill using the bill number
-  const searchForBill = useCallback(async (billNumber: string) => {
-    if (!billNumber) return;
-    setLoading(true);
-    try {
-      const response = await axios.post(`${baseUrl}/bill/${billNumber}`, { jwt });
-      const decryptedPayload = decryptData(response.data.payload, aesKey);
-      setBill(decryptedPayload);
-    } catch (error) {
-      alert('Failed to fetch bill');
-    } finally {
-      setLoading(false);
-    }
-  }, [aesKey, jwt]);
-
-  // Effect to search for a bill when the bill number or selected card changes
   useEffect(() => {
     if (billNumber && selectedCard) {
       searchForBill(billNumber);
     }
-  }, [selectedCard, billNumber, searchForBill]);
+  }, [selectedCard, billNumber]);
 
-  // Effect to set the first card as the selected card when the list of cards changes
   useEffect(() => {
     if (cards.length > 0) {
       setSelectedCard(cards[0]);
     }
   }, [cards]);
 
-  // Function to handle the first step of the login process
   const handleLoginStep1 = async () => {
     setLoading(true);
     try {
@@ -104,7 +60,6 @@ export default function Home({ billNumber }: HomeProps) {
     }
   };
 
-  // Function to handle the second step of the login process
   const handleLoginStep2 = async () => {
     setLoading(true);
     try {
@@ -121,7 +76,6 @@ export default function Home({ billNumber }: HomeProps) {
     }
   };
 
-  // Function to fetch the list of cards for the user
   const fetchCards = async (jwt: string, aesKey: string) => {
     try {
       const response = await axios.post(`${baseUrl}/card/user`, { jwt });
@@ -132,18 +86,21 @@ export default function Home({ billNumber }: HomeProps) {
     }
   };
 
-  // Function to handle the payment of a bill
+  const searchForBill = async (billNumber: string) => {
+    if (!billNumber) return;
+    setLoading(true);
+    try {
+      const response = await axios.post(`${baseUrl}/bill/${billNumber}`, { jwt });
+      const decryptedPayload = decryptData(response.data.payload, aesKey);
+      setBill(decryptedPayload);
+    } catch (error) {
+      alert('Failed to fetch bill');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const payBill = async () => {
-    if (!bill) {
-      alert('Bill is not available');
-      return;
-    }
-
-    if (!selectedCard) {
-      alert('No card selected');
-      return;
-    }
-
     setLoading(true);
     try {
       const response = await axios.post(`${baseUrl}/bill/pay/${bill.id}`, {
@@ -168,7 +125,7 @@ export default function Home({ billNumber }: HomeProps) {
   return (
     <div className="container mx-auto p-4 flex flex-col items-center justify-center min-h-screen">
       {step < 3 ? (
-        <UICard className="w-full max-w-md">
+        <Card className="w-full max-w-md">
           <CardHeader className="flex justify-between items-center">
             <img src="/assets/FuseLogo.png" alt="Fuse Logo" className="h-8 w-8" />
           </CardHeader>
@@ -207,33 +164,58 @@ export default function Home({ billNumber }: HomeProps) {
               </form>
             )}
           </CardContent>
-        </UICard>
+        </Card>
       ) : (
         <div className="w-full md:w-10/12 lg:w-8/12 flex flex-col md:flex-row gap-4 md:gap-8">
-          <UICard className="w-full md:w-1/2">
+          <Card className="w-full md:w-1/2">
             <CardHeader>
               <CardTitle className="text-xl sm:text-2xl">Select a Card</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {cards.map((card) => (
-                  <div key={card.id}>
-                    <div>
-                      <p className="text-xs sm:text-sm opacity-70 mb-1">Card Name:</p>
-                      <p className="text-sm sm:text-lg font-bold">{card.cardName}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs sm:text-sm opacity-70 mb-1">Balance:</p>
-                      <p className="text-sm sm:text-lg font-bold">{/* Balance value here */}</p>
+                {cards.map((card, index) => (
+                  <div
+                    key={index}
+                    className={`p-2 rounded-3xl cursor-pointer ${selectedCard && selectedCard.id === card.id ? 'ring-2 ring-black ring-inset' : ''}`}
+                    onClick={() => setSelectedCard(card)}
+                  >
+                    <div
+                      className="relative overflow-hidden rounded-lg mx-auto card-container"
+                      style={{
+                        backgroundImage: "url('/assets/Cart Minimal 5.png')",
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        width: '100%',
+                        maxWidth: '23rem',
+                        height: '0',
+                        paddingBottom: '62.5%', // 16:10 aspect ratio
+                      }}
+                    >
+                      <div className="absolute inset-0 p-4 text-white flex flex-col justify-between">
+                        <div>
+                          <p className="text-xs sm:text-sm opacity-70 mb-1">Card Name:</p>
+                          <p className="text-sm sm:text-lg font-bold">{card.cardName}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs sm:text-sm opacity-70 mb-1">Balance:</p>
+                          <p className="text-lg sm:text-2xl font-bold">${card.balance}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs opacity-70 mb-1">Expiry Date:</p>
+                          <p className="text-xs sm:text-sm">
+                            {new Date(card.expiryDate).toLocaleDateString(undefined, { year: 'numeric', month: '2-digit', day: '2-digit' })}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             </CardContent>
-          </UICard>
+          </Card>
 
           {selectedCard && bill && (
-            <UICard className="w-full md:w-1/2">
+            <Card className="w-full md:w-1/2">
               <CardHeader>
                 <CardTitle className="text-xl sm:text-2xl">Bill Details</CardTitle>
               </CardHeader>
@@ -258,7 +240,7 @@ export default function Home({ billNumber }: HomeProps) {
                   </div>
                 )}
               </CardContent>
-            </UICard>
+            </Card>
           )}
         </div>
       )}
