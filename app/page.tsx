@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client'
 
 import { useState, useEffect } from "react";
@@ -33,6 +34,12 @@ export default function Home({ billNumber }: HomeProps) {
       searchForBill(billNumber);
     }
   }, [selectedCard, billNumber]);
+
+  useEffect(() => {
+    if (cards.length > 0) {
+      setSelectedCard(cards[0]);
+    }
+  }, [cards]);
 
   const handleLoginStep1 = async () => {
     setLoading(true);
@@ -119,8 +126,8 @@ export default function Home({ billNumber }: HomeProps) {
     <div className="container mx-auto p-4 flex flex-col items-center justify-center min-h-screen">
       {step < 3 ? (
         <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle className="text-xl sm:text-2xl">Login</CardTitle>
+          <CardHeader className="flex justify-between items-center">
+            <img src="/assets/FuseLogo.png" alt="Fuse Logo" className="h-8 w-8" />
           </CardHeader>
           <CardContent>
             {step === 1 ? (
