@@ -1,14 +1,13 @@
-/* eslint-disable @next/next/no-img-element */
 'use client'
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { generateAesKey, encryptAesKey, encryptData, decryptData } from "../lib/crypto-utils";
 import axios from "axios";
-import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 const baseUrl = "https://fuse-backend-x7mr.onrender.com";
 
@@ -123,43 +122,74 @@ export default function Home({ billNumber }: HomeProps) {
   };
 
   return (
-    <div className="container mx-auto p-4 flex flex-col items-center justify-center min-h-screen">
+    <div className="flex min-h-screen items-center justify-center bg-gray-100">
       {step < 3 ? (
-        <Card className="w-full max-w-md">
-          <CardHeader className="flex justify-between items-center">
-            <img src="/assets/FuseLogo.png" alt="Fuse Logo" className="h-8 w-8" />
+        <Card className="w-full max-w-md p-6">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Login</CardTitle>
+                <CardDescription>
+                  Access your account
+                </CardDescription>
+              </div>
+              <Image
+                priority={true}
+                src="/assets/FuseLogo.png"
+                alt="Fuse Logo"
+                width={50}
+                height={50}
+                className="ml-2"
+              />
+            </div>
           </CardHeader>
           <CardContent>
             {step === 1 ? (
               <form onSubmit={(e) => { e.preventDefault(); handleLoginStep1(); }} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                <div className="mb-4">
                   <Input
                     id="email"
                     type="email"
+                    placeholder="Email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    className="w-full"
                     required
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Loading..." : "Next"}
+                  {loading ? (
+                    <>
+                      <span className="mr-2">Loading...</span>
+                      <div className="spinner-border animate-spin inline-block w-4 h-4 border-4 border-t-transparent border-white rounded-full"></div>
+                    </>
+                  ) : (
+                    "Next"
+                  )}
                 </Button>
               </form>
             ) : (
               <form onSubmit={(e) => { e.preventDefault(); handleLoginStep2(); }} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                <div className="mb-4">
                   <Input
                     id="password"
                     type="password"
+                    placeholder="Password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    className="w-full"
                     required
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Loading..." : "Login"}
+                  {loading ? (
+                    <>
+                      <span className="mr-2">Loading...</span>
+                      <div className="spinner-border animate-spin inline-block w-4 h-4 border-4 border-t-transparent border-white rounded-full"></div>
+                    </>
+                  ) : (
+                    "Login"
+                  )}
                 </Button>
               </form>
             )}
@@ -188,7 +218,7 @@ export default function Home({ billNumber }: HomeProps) {
                         width: '100%',
                         maxWidth: '23rem',
                         height: '0',
-                        paddingBottom: '62.5%', // 16:10 aspect ratio
+                        paddingBottom: '62.5%',
                       }}
                     >
                       <div className="absolute inset-0 p-4 text-white flex flex-col justify-between">
