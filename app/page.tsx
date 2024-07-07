@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -15,6 +15,29 @@ interface HomeProps {
   billNumber?: string;
 }
 
+interface Card {
+  id: string;
+  cvv: string;
+  expiryDate: string;
+  cardName: string;
+  balance: number; // Add this line
+}
+
+interface Bill {
+  id?: string;
+  invalid?: boolean;
+  status?: string;
+  category?: string;
+  merchantAccount?: {
+    user: {
+      name: string;
+    }
+  };
+  details?: string;
+  amount?: number;
+}
+
+
 export default function Home({ billNumber }: HomeProps) {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -22,17 +45,36 @@ export default function Home({ billNumber }: HomeProps) {
   const [password, setPassword] = useState("");
   const [aesKey, setAesKey] = useState("");
   const [loading, setLoading] = useState(false);
-  const [cards, setCards] = useState([]);
-  const [selectedCard, setSelectedCard] = useState(null);
-  const [bill, setBill] = useState(null);
+  const [cards, setCards] = useState<Card[]>([]);
+  const [selectedCard, setSelectedCard] = useState<Card | null>(null);
+  const [bill, setBill] = useState<Bill | null>(null);
   const [transactionStatus, setTransactionStatus] = useState("");
   const [jwt, setJwt] = useState("");
+
+  const searchForBill = useCallback(async (billNumber: string) => {
+    if (!billNumber) return;
+    setLoading(true);
+    try {
+      const response = await axios.post(`${baseUrl}/bill/${billNumber}`, { jwt });
+      const decryptedPayload = decryptData(response.data.payload, aesKey);
+      if (decryptedPayload && decryptedPayload.id) {
+        setBill(decryptedPayload);
+      } else {
+        setBill({ invalid: true });
+      }
+    } catch (error) {
+      console.error('Failed to fetch bill:', error);
+      setBill({ invalid: true });
+    } finally {
+      setLoading(false);
+    }
+  }, [aesKey, jwt]);
 
   useEffect(() => {
     if (billNumber && selectedCard) {
       searchForBill(billNumber);
     }
-  }, [selectedCard, billNumber]);
+  }, [selectedCard, billNumber, searchForBill]);
 
   useEffect(() => {
     if (cards.length > 0) {
@@ -85,29 +127,15 @@ export default function Home({ billNumber }: HomeProps) {
     }
   };
 
-  const searchForBill = async (billNumber: string) => {
-    if (!billNumber) return;
-    setLoading(true);
-    try {
-      const response = await axios.post(`${baseUrl}/bill/${billNumber}`, { jwt });
-      const decryptedPayload = decryptData(response.data.payload, aesKey);
-      if (decryptedPayload && decryptedPayload.id) {
-        setBill(decryptedPayload);
-      } else {
-        setBill({ invalid: true });
-      }
-    } catch (error) {
-      console.error('Failed to fetch bill:', error);
-      setBill({ invalid: true });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const payBill = async () => {
+    if (!selectedCard || !selectedCard.expiryDate) {
+      alert('Card information is incomplete');
+      return;
+    }
+
     setLoading(true);
     try {
-      const response = await axios.post(`${baseUrl}/bill/pay/${bill.id}`, {
+      const response = await axios.post(`${baseUrl}/bill/pay/${bill?.id}`, {
         jwt,
         payload: encryptData({
           cardId: selectedCard.id,
@@ -266,7 +294,7 @@ export default function Home({ billNumber }: HomeProps) {
                         <>
                           <p><strong>Bill Number:</strong> {bill.id}</p>
                           <p><strong>Category:</strong> {bill.category}</p>
-                          <p><strong>Merchant:</strong> {bill.merchantAccount.user.name}</p>
+                          <p><strong>Merchant:</strong> {bill.merchantAccount?.user?.name ?? 'N/A'}</p>
                           <p><strong>Description:</strong> {bill.details}</p>
                           <p><strong>Amount:</strong> ${bill.amount}</p>
                           <Button onClick={payBill} className="w-full mt-4" disabled={loading}>
