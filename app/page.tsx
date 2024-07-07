@@ -91,9 +91,14 @@ export default function Home({ billNumber }: HomeProps) {
     try {
       const response = await axios.post(`${baseUrl}/bill/${billNumber}`, { jwt });
       const decryptedPayload = decryptData(response.data.payload, aesKey);
-      setBill(decryptedPayload);
+      if (decryptedPayload && decryptedPayload.id) {
+        setBill(decryptedPayload);
+      } else {
+        setBill({ invalid: true });
+      }
     } catch (error) {
-      alert('Failed to fetch bill');
+      console.error('Failed to fetch bill:', error);
+      setBill({ invalid: true });
     } finally {
       setLoading(false);
     }
@@ -244,22 +249,30 @@ export default function Home({ billNumber }: HomeProps) {
             </CardContent>
           </Card>
 
-          {selectedCard && bill && (
+          {selectedCard && (
             <Card className="w-full md:w-1/2">
               <CardHeader>
                 <CardTitle className="text-xl sm:text-2xl">Bill Details</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2 text-sm sm:text-base">
-                  <p><strong>Bill Number:</strong> {bill.id}</p>
-                  <p><strong>Category:</strong> {bill.category}</p>
-                  <p><strong>Merchant:</strong> {bill.merchantAccount.user.name}</p>
-                  <p><strong>Description:</strong> {bill.details}</p>
-                  <p><strong>Amount:</strong> ${bill.amount}</p>
-                  <Button onClick={payBill} className="w-full mt-4" disabled={loading}>
-                    {loading ? "Processing..." : "Pay Bill"}
-                  </Button>
-                </div>
+                {bill ? (
+                  bill.invalid ? (
+                    <p className="text-red-500">This bill number is invalid.</p>
+                  ) : (
+                    <div className="space-y-2 text-sm sm:text-base">
+                      <p><strong>Bill Number:</strong> {bill.id}</p>
+                      <p><strong>Category:</strong> {bill.category}</p>
+                      <p><strong>Merchant:</strong> {bill.merchantAccount.user.name}</p>
+                      <p><strong>Description:</strong> {bill.details}</p>
+                      <p><strong>Amount:</strong> ${bill.amount}</p>
+                      <Button onClick={payBill} className="w-full mt-4" disabled={loading}>
+                        {loading ? "Processing..." : "Pay Bill"}
+                      </Button>
+                    </div>
+                  )
+                ) : (
+                  <p>Loading bill details...</p>
+                )}
                 {transactionStatus && (
                   <div className="mt-4 text-center">
                     {transactionStatus === "success" ? (
